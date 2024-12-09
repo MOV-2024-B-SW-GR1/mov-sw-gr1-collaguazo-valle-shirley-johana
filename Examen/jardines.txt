@@ -1,0 +1,1 @@
+[{"id":1,"nombre":"JardinPeonia","ubicacion":"Nayon","fechaCreacion":"2023-12-23","tamano":30.0,"tipoSuelo":"margoso","flores":[{"id":1,"nombre":"Peonia","color":"rosa","diametro":4.0,"esFragante":true,"temporadaFloracion":"Verano"}]},{"id":2,"nombre":"JardinClavel","ubicacion":"nayon","fechaCreacion":"2024-05-20","tamano":60.0,"tipoSuelo":"frnaco"}]
