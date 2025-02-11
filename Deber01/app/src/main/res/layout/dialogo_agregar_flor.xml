@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/etNombreFlor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre de la flor"/>
+
+    <EditText
+        android:id="@+id/etColorFlor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Color de la flor"/>
+
+    <EditText
+        android:id="@+id/etDiametroFlor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Diámetro (cm)"
+        android:inputType="numberDecimal"/>
+
+    <Switch
+        android:id="@+id/switchFragante"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="¿Es fragante?"/>
+
+    <EditText
+        android:id="@+id/etTemporadaFlor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Temporada de floración (Ej: Primavera)"/>
+</LinearLayout>

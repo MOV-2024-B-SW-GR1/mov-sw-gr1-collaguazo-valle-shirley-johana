@@ -3,38 +3,42 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="8dp"
+    android:padding="10dp"
     android:background="@android:color/white"
-    android:elevation="2dp">
+    android:elevation="4dp"
+    android:layout_margin="5dp">
 
     <TextView
-        android:id="@+id/tvNombreFlor"
+        android:id="@+id/tvNombreJardin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Nombre del Jardín"
+        android:textSize="18sp"
         android:textStyle="bold"
-        android:textSize="16sp"/>
+        android:textColor="@android:color/black"/>
 
     <TextView
-        android:id="@+id/tvColorFlor"
+        android:id="@+id/tvUbicacionJardin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"/>
+        android:text="Ubicación: "/>
 
     <TextView
-        android:id="@+id/tvDiametroFlor"
+        android:id="@+id/tvFechaJardin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"/>
+        android:text="Fecha: "/>
 
     <TextView
-        android:id="@+id/tvFraganteFlor"
+        android:id="@+id/tvTamanoJardin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"/>
+        android:text="Tamaño: "/>
 
     <TextView
-        android:id="@+id/tvTemporadaFlor"
+        android:id="@+id/tvTipoSueloJardin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"/>
+        android:text="Suelo: "/>
+
 </LinearLayout>

@@ -1,30 +1,29 @@
 package com.example.deber01
 
+import android.content.Intent
 import android.os.Bundle
-import com.example.deber01.FlorAdapter
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var florAdapter: FlorAdapter
-    private val listaFlores = mutableListOf<Flor>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        recyclerView = findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        val btnJardin: Button = findViewById(R.id.btnJardin)
+        val btnFlor: Button = findViewById(R.id.btnFlor)
 
-        // Agregamos datos manualmente a la lista
-        listaFlores.add(Flor("Rosa", "Rojo", 5.0, true, "Primavera"))
-        listaFlores.add(Flor("Girasol", "Amarillo", 20.0, false, "Verano"))
-        listaFlores.add(Flor("Tulipán", "Rosa", 10.0, false, "Invierno"))
+        // Botón para ir a la gestión de jardines
+        btnJardin.setOnClickListener {
+            val intent = Intent(this, JardinActivity::class.java)
+            startActivity(intent)
+        }
 
-        florAdapter = FlorAdapter(listaFlores)
-        recyclerView.adapter = florAdapter
+        // Botón para ir a la gestión de flores
+        btnFlor.setOnClickListener {
+            val intent = Intent(this, SeleccionarJardinParaFloresActivity::class.java)
+            startActivity(intent)
+        }
     }
 }

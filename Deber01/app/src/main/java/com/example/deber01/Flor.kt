@@ -4,6 +4,7 @@ data class Flor(
     var nombre: String,
     var color: String,
     var diametro: Double,
-    var esFragante: Boolean,
+    var fragante: Boolean,
     var temporadaFloracion: String
 )
+
