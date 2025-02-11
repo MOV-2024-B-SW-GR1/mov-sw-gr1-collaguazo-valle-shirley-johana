@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <EditText
+        android:id="@+id/etNombreJardin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre del Jardín"/>
+
+    <EditText
+        android:id="@+id/etUbicacion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ubicación"/>
+
+    <EditText
+        android:id="@+id/etFechaCreacion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Fecha Creación (YYYY-MM-DD)"/>
+
+    <EditText
+        android:id="@+id/etTamano"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tamaño (m²)"/>
+
+    <EditText
+        android:id="@+id/etTipoSuelo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tipo de Suelo"/>
+</LinearLayout>
