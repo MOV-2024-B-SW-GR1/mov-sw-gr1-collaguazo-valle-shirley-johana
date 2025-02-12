@@ -7,13 +7,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+// Usamos Triple: first = ID de la flor, second = ID del jardín, third = objeto Flor
 class FlorAdapter(
     private val context: Context,
-    private val listaFlores: MutableList<Flor>,
-    private val onItemClick: (Flor) -> Unit
+    private var listaFlores: MutableList<Triple<Int, Int, Flor>>,
+    private val onItemClick: (Triple<Int, Int, Flor>) -> Unit
 ) : RecyclerView.Adapter<FlorAdapter.FlorViewHolder>() {
 
-    class FlorViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class FlorViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val nombreFlor: TextView = view.findViewById(R.id.tvNombreFlor)
         val colorFlor: TextView = view.findViewById(R.id.tvColorFlor)
         val diametroFlor: TextView = view.findViewById(R.id.tvDiametroFlor)
@@ -27,18 +28,23 @@ class FlorAdapter(
     }
 
     override fun onBindViewHolder(holder: FlorViewHolder, position: Int) {
-        val flor = listaFlores[position]
+        val (_, _, flor) = listaFlores[position]
         holder.nombreFlor.text = flor.nombre
         holder.colorFlor.text = "Color: ${flor.color}"
         holder.diametroFlor.text = "Diámetro: ${flor.diametro} cm"
         holder.fraganteFlor.text = "Fragante: ${if (flor.fragante) "Sí" else "No"}"
         holder.temporadaFlor.text = "Temporada: ${flor.temporadaFloracion}"
 
-        // Evento clic en la flor seleccionada
         holder.itemView.setOnClickListener {
-            onItemClick(flor)
+            onItemClick(listaFlores[position])
         }
     }
 
     override fun getItemCount(): Int = listaFlores.size
+
+    fun updateData(newLista: List<Triple<Int, Int, Flor>>) {
+        listaFlores.clear()
+        listaFlores.addAll(newLista)
+        notifyDataSetChanged()
+    }
 }

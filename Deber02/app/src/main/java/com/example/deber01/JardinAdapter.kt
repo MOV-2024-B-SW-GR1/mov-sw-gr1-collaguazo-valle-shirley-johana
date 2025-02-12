@@ -9,11 +9,11 @@ import androidx.recyclerview.widget.RecyclerView
 
 class JardinAdapter(
     private val context: Context,
-    private val listaJardines: MutableList<Jardin>,
-    private val onItemClick: (Jardin) -> Unit
+    private var listaJardines: MutableList<Pair<Int, Jardin>>,
+    private val onItemClick: (Pair<Int, Jardin>) -> Unit
 ) : RecyclerView.Adapter<JardinAdapter.JardinViewHolder>() {
 
-    class JardinViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class JardinViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val nombreJardin: TextView = view.findViewById(R.id.tvNombreJardin)
         val ubicacionJardin: TextView = view.findViewById(R.id.tvUbicacionJardin)
         val fechaCreacion: TextView = view.findViewById(R.id.tvFechaJardin)
@@ -27,18 +27,30 @@ class JardinAdapter(
     }
 
     override fun onBindViewHolder(holder: JardinViewHolder, position: Int) {
-        val jardin = listaJardines[position]
+        // Obtenemos el par (id, objeto Jardin)
+        val (id, jardin) = listaJardines[position]
         holder.nombreJardin.text = jardin.nombre
         holder.ubicacionJardin.text = "Ubicación: ${jardin.ubicacion}"
         holder.fechaCreacion.text = "Fecha: ${jardin.fechaCreacion}"
         holder.tamanoJardin.text = "Tamaño: ${jardin.tamano} m²"
         holder.tipoSueloJardin.text = "Suelo: ${jardin.tipoSuelo}"
 
-        // Manejo de clic en el elemento
+        // Se pasa el par completo al callback
         holder.itemView.setOnClickListener {
-            onItemClick(jardin)
+            onItemClick(listaJardines[position])
         }
     }
 
     override fun getItemCount(): Int = listaJardines.size
+
+    /**
+     * Actualiza la lista interna del adaptador y refresca la vista.
+     *
+     * @param newLista La nueva lista de jardines (con sus respectivos ID).
+     */
+    fun updateData(newLista: List<Pair<Int, Jardin>>) {
+        listaJardines.clear()
+        listaJardines.addAll(newLista)
+        notifyDataSetChanged()
+    }
 }

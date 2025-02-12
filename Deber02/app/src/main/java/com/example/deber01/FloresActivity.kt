@@ -1,9 +1,10 @@
 package com.example.deber01
 
+import android.view.View
+
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,38 +12,48 @@ import androidx.recyclerview.widget.RecyclerView
 
 class FloresActivity : AppCompatActivity() {
 
-    private lateinit var listaFlores: MutableList<Flor>
+    // Se recibirá el ID y el nombre del jardín desde el intent
+    private var jardinId: Int = 0
+    private lateinit var nombreJardin: String
+
+    // Ahora usamos una lista de Triple: (florId, jardinId, Flor)
+    private lateinit var listaFlores: MutableList<Triple<Int, Int, Flor>>
     private lateinit var adapter: FlorAdapter
     private lateinit var recyclerViewFlores: RecyclerView
-    private lateinit var nombreJardin: String
-    private var floresVisibles = false  // Variable para alternar la visibilidad
+
+    private lateinit var florDao: FlorDAO
+
+    // Variable para alternar la visibilidad del RecyclerView
+    private var floresVisibles = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_flores)
 
-        // Recibir el nombre del jardín seleccionado
+        // Recuperar datos enviados (asegúrate de enviarlos al iniciar esta actividad)
+        jardinId = intent.getIntExtra("jardinId", 0)
         nombreJardin = intent.getStringExtra("nombreJardin") ?: "Sin nombre"
 
+        florDao = FlorDAO(this)
+
         recyclerViewFlores = findViewById(R.id.recyclerViewFlores)
+        recyclerViewFlores.layoutManager = LinearLayoutManager(this)
+
+        // Cargamos las flores asociadas al jardín desde SQLite
+        cargarFlores()
+
+        // Inicializamos el adaptador usando la lista obtenida
+        adapter = FlorAdapter(this, listaFlores) { florTriple ->
+            mostrarDialogoOpciones(florTriple)
+        }
+        recyclerViewFlores.adapter = adapter
+        recyclerViewFlores.visibility = if (floresVisibles) View.VISIBLE else View.GONE
+
+        // Referencias a botones
         val btnAgregarFlor: Button = findViewById(R.id.btnAgregarFlor)
         val btnVerFlores: Button = findViewById(R.id.btnVerFlores)
         val btnEditarFlor: Button = findViewById(R.id.btnEditarFlor)
         val btnEliminarFlor: Button = findViewById(R.id.btnEliminarFlor)
-
-        // Inicializar lista de flores
-        listaFlores = mutableListOf(
-            Flor("Peonía", "Rosa", 5.0, true, "Verano"),
-            Flor("Girasol", "Amarillo", 20.0, false, "Verano")
-        )
-
-        // Configurar RecyclerView pero INICIALMENTE OCULTO
-        recyclerViewFlores.layoutManager = LinearLayoutManager(this)
-        adapter = FlorAdapter(this, listaFlores) { florSeleccionada ->
-            mostrarDialogoOpciones(florSeleccionada)
-        }
-        recyclerViewFlores.adapter = adapter
-        recyclerViewFlores.visibility = View.GONE // OCULTAR INICIALMENTE
 
         // Eventos de botones
         btnAgregarFlor.setOnClickListener { mostrarDialogoAgregarFlor() }
@@ -51,95 +62,68 @@ class FloresActivity : AppCompatActivity() {
         btnEliminarFlor.setOnClickListener { mostrarDialogoEliminarFlor() }
     }
 
-    private fun alternarVisibilidadFlores() {
-        if (floresVisibles) {
-            recyclerViewFlores.visibility = View.GONE
-            floresVisibles = false
-        } else {
-            recyclerViewFlores.visibility = View.VISIBLE
-            floresVisibles = true
+    // Carga las flores desde la BD filtrando por el ID del jardín
+    private fun cargarFlores() {
+        listaFlores = florDao.obtenerPorJardin(jardinId).toMutableList()
+        if (::adapter.isInitialized) {
+            adapter.updateData(listaFlores)
         }
     }
 
-    private fun mostrarDialogoOpciones(flor: Flor) {
-        val opciones = arrayOf("Editar", "Eliminar")
+    private fun alternarVisibilidadFlores() {
+        floresVisibles = !floresVisibles
+        recyclerViewFlores.visibility = if (floresVisibles) View.VISIBLE else View.GONE
+    }
 
+    private fun mostrarDialogoOpciones(florTriple: Triple<Int, Int, Flor>) {
+        val (_, _, flor) = florTriple
+        val opciones = arrayOf("Editar", "Eliminar")
         AlertDialog.Builder(this)
             .setTitle("Opciones para ${flor.nombre}")
             .setItems(opciones) { _, which ->
                 when (which) {
-                    0 -> mostrarDialogoEditarFlor(flor) // Editar
-                    1 -> confirmarEliminarFlor(flor)  // Eliminar
+                    0 -> mostrarDialogoEditarFlor(florTriple)
+                    1 -> confirmarEliminarFlor(florTriple)
                 }
             }
             .show()
     }
 
-    private fun confirmarEliminarFlor(flor: Flor) {
+    private fun confirmarEliminarFlor(florTriple: Triple<Int, Int, Flor>) {
+        val (florId, _, flor) = florTriple
         AlertDialog.Builder(this)
             .setTitle("Eliminar Flor")
             .setMessage("¿Seguro que quieres eliminar la flor '${flor.nombre}'?")
             .setPositiveButton("Sí") { _, _ ->
-                listaFlores.remove(flor)
-                actualizarLista()
-                Toast.makeText(this, "Flor eliminada", Toast.LENGTH_SHORT).show()
+                val rowsDeleted = florDao.eliminar(florId)
+                if (rowsDeleted > 0) {
+                    Toast.makeText(this, "Flor eliminada", Toast.LENGTH_SHORT).show()
+                    cargarFlores()
+                } else {
+                    Toast.makeText(this, "Error al eliminar la flor", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun actualizarLista() {
-        adapter.notifyDataSetChanged()
-    }
-
-    private fun mostrarDialogoAgregarFlor() {
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.dialogo_agregar_flor, null)
-
-        val etNombre = view.findViewById<EditText>(R.id.etNombreFlor)
-        val etColor = view.findViewById<EditText>(R.id.etColorFlor)
-        val etDiametro = view.findViewById<EditText>(R.id.etDiametroFlor)
-        val switchFragante = view.findViewById<Switch>(R.id.switchFragante)
-        val etTemporada = view.findViewById<EditText>(R.id.etTemporadaFlor)
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Agregar Flor")
-            .setView(view)
-            .setPositiveButton("Guardar") { _, _ ->
-                val nuevaFlor = Flor(
-                    etNombre.text.toString(),
-                    etColor.text.toString(),
-                    etDiametro.text.toString().toDoubleOrNull() ?: 0.0,
-                    switchFragante.isChecked,
-                    etTemporada.text.toString()
-                )
-                listaFlores.add(nuevaFlor)
-                actualizarLista()
-                Toast.makeText(this, "Flor agregada", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancelar", null)
-            .create()
-
-        dialog.show()
-    }
-
+    // Muestra un diálogo para seleccionar cuál flor editar, en caso de no pasar una flor directa
     private fun mostrarDialogoEditarFlor() {
         if (listaFlores.isEmpty()) {
             Toast.makeText(this, "No hay flores para editar", Toast.LENGTH_SHORT).show()
             return
         }
-
-        val nombres = listaFlores.map { it.nombre }.toTypedArray()
-
+        val nombres = listaFlores.map { it.third.nombre }.toTypedArray()
         AlertDialog.Builder(this)
-            .setTitle("Seleccionar Flor para Editar")
+            .setTitle("Selecciona Flor para Editar")
             .setItems(nombres) { _, position ->
                 mostrarDialogoEditarFlor(listaFlores[position])
             }
             .show()
     }
 
-    private fun mostrarDialogoEditarFlor(flor: Flor) {
+    private fun mostrarDialogoEditarFlor(florTriple: Triple<Int, Int, Flor>) {
+        val (florId, _, flor) = florTriple
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.dialogo_agregar_flor, null)
 
@@ -164,29 +148,71 @@ class FloresActivity : AppCompatActivity() {
                 flor.diametro = etDiametro.text.toString().toDoubleOrNull() ?: 0.0
                 flor.fragante = switchFragante.isChecked
                 flor.temporadaFloracion = etTemporada.text.toString()
-                actualizarLista()
-                Toast.makeText(this, "Flor actualizada", Toast.LENGTH_SHORT).show()
+
+                val rowsUpdated = florDao.actualizar(florId, flor, jardinId)
+                if (rowsUpdated > 0) {
+                    Toast.makeText(this, "Flor actualizada", Toast.LENGTH_SHORT).show()
+                    cargarFlores()
+                } else {
+                    Toast.makeText(this, "Error al actualizar la flor", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Cancelar", null)
-            .create()
             .show()
     }
 
+    // Muestra un diálogo para seleccionar cuál flor eliminar
     private fun mostrarDialogoEliminarFlor() {
         if (listaFlores.isEmpty()) {
             Toast.makeText(this, "No hay flores para eliminar", Toast.LENGTH_SHORT).show()
             return
         }
+        val nombres = listaFlores.map { it.third.nombre }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Selecciona Flor para Eliminar")
+            .setItems(nombres) { _, position ->
+                val florTriple = listaFlores[position]
+                val rowsDeleted = florDao.eliminar(florTriple.first)
+                if (rowsDeleted > 0) {
+                    Toast.makeText(this, "Flor eliminada", Toast.LENGTH_SHORT).show()
+                    cargarFlores()
+                } else {
+                    Toast.makeText(this, "Error al eliminar la flor", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .show()
+    }
 
-        val nombres = listaFlores.map { it.nombre }.toTypedArray()
+    private fun mostrarDialogoAgregarFlor() {
+        val inflater = LayoutInflater.from(this)
+        val view = inflater.inflate(R.layout.dialogo_agregar_flor, null)
+
+        val etNombre = view.findViewById<EditText>(R.id.etNombreFlor)
+        val etColor = view.findViewById<EditText>(R.id.etColorFlor)
+        val etDiametro = view.findViewById<EditText>(R.id.etDiametroFlor)
+        val switchFragante = view.findViewById<Switch>(R.id.switchFragante)
+        val etTemporada = view.findViewById<EditText>(R.id.etTemporadaFlor)
 
         AlertDialog.Builder(this)
-            .setTitle("Seleccionar Flor para Eliminar")
-            .setItems(nombres) { _, position ->
-                listaFlores.removeAt(position)
-                actualizarLista()
-                Toast.makeText(this, "Flor eliminada", Toast.LENGTH_SHORT).show()
+            .setTitle("Agregar Flor")
+            .setView(view)
+            .setPositiveButton("Guardar") { _, _ ->
+                val nuevaFlor = Flor(
+                    etNombre.text.toString(),
+                    etColor.text.toString(),
+                    etDiametro.text.toString().toDoubleOrNull() ?: 0.0,
+                    switchFragante.isChecked,
+                    etTemporada.text.toString()
+                )
+                val newId = florDao.insertar(nuevaFlor, jardinId)
+                if (newId > 0) {
+                    Toast.makeText(this, "Flor agregada", Toast.LENGTH_SHORT).show()
+                    cargarFlores()
+                } else {
+                    Toast.makeText(this, "Error al agregar la flor", Toast.LENGTH_SHORT).show()
+                }
             }
+            .setNegativeButton("Cancelar", null)
             .show()
     }
 }

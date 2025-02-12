@@ -13,7 +13,7 @@
         android:textSize="20sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:paddingBottom="10dp"/>
+        android:paddingBottom="10dp" />
 
     <!-- Botones de CRUD -->
     <LinearLayout
@@ -28,14 +28,14 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Agregar Jardín"/>
+            android:text="Agregar Jardín" />
 
         <Button
             android:id="@+id/btnVerJardines"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Ver Jardines"/>
+            android:text="Ver Jardines" />
     </LinearLayout>
 
     <LinearLayout
@@ -51,20 +51,21 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Editar Jardín"/>
+            android:text="Editar Jardín" />
 
         <Button
             android:id="@+id/btnEliminarJardin"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Eliminar Jardín"/>
+            android:text="Eliminar Jardín" />
     </LinearLayout>
 
     <!-- Lista de Jardines -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewJardines"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:visibility="gone"/>
 </LinearLayout>
