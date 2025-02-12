@@ -1,41 +1,46 @@
 package com.example.deber01
 
-import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class JardinActivity : AppCompatActivity() {
 
-    // Ahora la lista contiene pares: (id, objeto Jardin)
+    // Lista de jardines, cada elemento es un Pair(id, Jardin)
     private lateinit var listaJardines: MutableList<Pair<Int, Jardin>>
     private lateinit var adapter: JardinAdapter
     private lateinit var recyclerViewJardines: RecyclerView
     private lateinit var jardinDao: JardinDAO
 
+    // Variable para almacenar el jardín seleccionado (para usarlo al ver el mapa)
+    private var jardinActual: Pair<Int, Jardin>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_jardin)
 
-        // Inicializamos el DAO (que usa DatabaseHelper internamente)
+        // Inicializamos el DAO que utiliza DatabaseHelper
         jardinDao = JardinDAO(this)
 
         // Configuramos el RecyclerView
         recyclerViewJardines = findViewById(R.id.recyclerViewJardines)
         recyclerViewJardines.layoutManager = LinearLayoutManager(this)
-        recyclerViewJardines.visibility = View.GONE  // Se muestra al presionar "Ver Jardines"
+        recyclerViewJardines.visibility = View.GONE  // Inicialmente oculto
 
-        // Cargamos los jardines desde SQLite
+        // Cargamos los datos desde SQLite
         cargarJardines()
 
-        // Inicializamos el adaptador. Se asume que el adaptador ha sido modificado para trabajar con Pair<Int, Jardin>
+        // Inicializamos el adaptador; al hacer clic en un jardín se guarda en jardinActual y se muestran las opciones
         adapter = JardinAdapter(this, listaJardines) { jardinPair ->
+            jardinActual = jardinPair
             mostrarDialogoOpciones(jardinPair)
         }
         recyclerViewJardines.adapter = adapter
@@ -49,7 +54,7 @@ class JardinActivity : AppCompatActivity() {
         // Eventos de botones
         btnAgregarJardin.setOnClickListener { mostrarDialogoAgregarJardin() }
         btnVerJardines.setOnClickListener {
-            cargarJardines()  // Refrescar la lista desde la BD
+            cargarJardines()
             recyclerViewJardines.visibility = View.VISIBLE
             adapter.notifyDataSetChanged()
         }
@@ -57,31 +62,44 @@ class JardinActivity : AppCompatActivity() {
         btnEliminarJardin.setOnClickListener { mostrarDialogoEliminarJardin() }
     }
 
-    // Función para cargar la lista de jardines desde la base de datos
+    // Carga la lista de jardines desde la base de datos
     private fun cargarJardines() {
         listaJardines = jardinDao.obtenerTodos().toMutableList()
-        // Si el adaptador ya fue inicializado, actualizamos su data.
         if (::adapter.isInitialized) {
             adapter.updateData(listaJardines)
         }
     }
 
-    // Muestra un diálogo con las opciones (Editar o Eliminar) para el jardín seleccionado.
+    // Muestra un diálogo con las opciones: Editar, Eliminar y Ver mapa para el jardín seleccionado
     private fun mostrarDialogoOpciones(jardinPair: Pair<Int, Jardin>) {
-        val (id, jardin) = jardinPair
-        val opciones = arrayOf("Editar", "Eliminar")
+        val (_, jardin) = jardinPair
+        val opciones = arrayOf("Editar", "Eliminar", "Ver mapa")
         AlertDialog.Builder(this)
             .setTitle("Opciones para ${jardin.nombre}")
             .setItems(opciones) { _, which ->
                 when (which) {
                     0 -> mostrarDialogoEditarJardin(jardinPair)
                     1 -> confirmarEliminarJardin(jardinPair)
+                    2 -> verMapa(jardin)
                 }
             }
             .show()
     }
 
-    // Pregunta al usuario si desea eliminar el jardín y, de confirmar, lo elimina en la BD.
+    // Función que lanza MapActivity pasando las coordenadas del jardín
+    private fun verMapa(jardin: Jardin) {
+        if (jardin.latitud != 0.0 && jardin.longitud != 0.0) {
+            val intent = Intent(this, MapActivity::class.java)
+            intent.putExtra("latitud", jardin.latitud)
+            intent.putExtra("longitud", jardin.longitud)
+            intent.putExtra("nombreJardin", jardin.nombre)
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, "El jardín no tiene coordenadas definidas", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Confirma y elimina el jardín seleccionado
     private fun confirmarEliminarJardin(jardinPair: Pair<Int, Jardin>) {
         val (id, jardin) = jardinPair
         AlertDialog.Builder(this)
@@ -100,7 +118,7 @@ class JardinActivity : AppCompatActivity() {
             .show()
     }
 
-    // Muestra el diálogo para agregar un nuevo jardín y lo inserta en la BD.
+    // Diálogo para agregar un nuevo jardín; calcula latitud y longitud según la ubicación ingresada
     private fun mostrarDialogoAgregarJardin() {
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.dialogo_agregar_jardin, null)
@@ -111,17 +129,26 @@ class JardinActivity : AppCompatActivity() {
         val etTamano = view.findViewById<EditText>(R.id.etTamano)
         val etTipoSuelo = view.findViewById<EditText>(R.id.etTipoSuelo)
 
-        val dialog = AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle("Agregar Jardín")
             .setView(view)
             .setPositiveButton("Guardar") { _, _ ->
-                val nuevoJardin = Jardin(
-                    etNombre.text.toString(),
-                    etUbicacion.text.toString(),
-                    etFecha.text.toString(),
-                    etTamano.text.toString().toDoubleOrNull() ?: 0.0,
-                    etTipoSuelo.text.toString()
-                )
+                val nombre = etNombre.text.toString()
+                // Convertir la ubicación a minúsculas y eliminar espacios al inicio y final
+                val ubicacionTexto = etUbicacion.text.toString().toLowerCase().trim()
+                val fecha = etFecha.text.toString()
+                val tamano = etTamano.text.toString().toDoubleOrNull() ?: 0.0
+                val tipoSuelo = etTipoSuelo.text.toString()
+
+                // Asignar coordenadas según el valor de ubicación
+                val (lat, lon) = when (ubicacionTexto) {
+                    "nayon" -> Pair(-0.1620081826918916, -78.43737278894837)
+                    "recreo" -> Pair(-0.235854452395613, -78.51572090475261)
+                    "quitumbe" -> Pair(-0.28763229699768506, -78.54753304523491)
+                    else -> Pair(0.0, 0.0)
+                }
+
+                val nuevoJardin = Jardin(nombre, ubicacionTexto, fecha, tamano, tipoSuelo, lat, lon)
                 val newId = jardinDao.insertar(nuevoJardin)
                 if (newId > 0) {
                     Toast.makeText(this, "Jardín agregado", Toast.LENGTH_SHORT).show()
@@ -131,18 +158,15 @@ class JardinActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Cancelar", null)
-            .create()
-
-        dialog.show()
+            .show()
     }
 
-    // Muestra un diálogo para que el usuario seleccione un jardín de la lista para editar.
+    // Diálogo para seleccionar un jardín a editar (si no se pasa uno directamente)
     private fun mostrarDialogoEditarJardin() {
         if (listaJardines.isEmpty()) {
             Toast.makeText(this, "No hay jardines para editar", Toast.LENGTH_SHORT).show()
             return
         }
-
         val nombres = listaJardines.map { it.second.nombre }.toTypedArray()
         AlertDialog.Builder(this)
             .setTitle("Seleccionar Jardín para Editar")
@@ -152,7 +176,7 @@ class JardinActivity : AppCompatActivity() {
             .show()
     }
 
-    // Muestra el diálogo de edición precargado con los datos del jardín seleccionado.
+    // Diálogo para editar el jardín; recalcula las coordenadas según el valor actualizado de ubicación
     private fun mostrarDialogoEditarJardin(jardinPair: Pair<Int, Jardin>) {
         val (id, jardin) = jardinPair
         val inflater = LayoutInflater.from(this)
@@ -174,15 +198,25 @@ class JardinActivity : AppCompatActivity() {
             .setTitle("Editar Jardín")
             .setView(view)
             .setPositiveButton("Guardar") { _, _ ->
-                // Actualizamos los datos del objeto
                 jardin.nombre = etNombre.text.toString()
-                jardin.ubicacion = etUbicacion.text.toString()
+                val ubicacionTexto = etUbicacion.text.toString().toLowerCase().trim()
+                jardin.ubicacion = ubicacionTexto
                 jardin.fechaCreacion = etFecha.text.toString()
                 jardin.tamano = etTamano.text.toString().toDoubleOrNull() ?: 0.0
                 jardin.tipoSuelo = etTipoSuelo.text.toString()
 
-                val rowsUpdated = jardinDao.actualizar(id, jardin)
-                if (rowsUpdated > 0) {
+                // Recalcular coordenadas basadas en la ubicación actualizada
+                val (lat, lon) = when (ubicacionTexto) {
+                    "nayon" -> Pair(-0.1620081826918916, -78.43737278894837)
+                    "recreo" -> Pair(-0.235854452395613, -78.51572090475261)
+                    "quitumbe" -> Pair(-0.28763229699768506, -78.54753304523491)
+                    else -> Pair(0.0, 0.0)
+                }
+                jardin.latitud = lat
+                jardin.longitud = lon
+
+                val rowsAffected = jardinDao.actualizar(id, jardin)
+                if (rowsAffected > 0) {
                     Toast.makeText(this, "Jardín actualizado", Toast.LENGTH_SHORT).show()
                     cargarJardines()
                 } else {
@@ -190,17 +224,15 @@ class JardinActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Cancelar", null)
-            .create()
             .show()
     }
 
-    // Muestra un diálogo para que el usuario seleccione un jardín para eliminar.
+    // Diálogo para eliminar un jardín seleccionándolo de una lista
     private fun mostrarDialogoEliminarJardin() {
         if (listaJardines.isEmpty()) {
             Toast.makeText(this, "No hay jardines para eliminar", Toast.LENGTH_SHORT).show()
             return
         }
-
         val nombres = listaJardines.map { it.second.nombre }.toTypedArray()
         AlertDialog.Builder(this)
             .setTitle("Seleccionar Jardín para Eliminar")

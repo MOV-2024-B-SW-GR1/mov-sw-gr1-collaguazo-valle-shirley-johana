@@ -26,6 +26,7 @@
         <activity android:name=".FloresActivity"></activity>
         <activity android:name=".JardinActivity"/>
         <activity android:name=".SeleccionarJardinParaFloresActivity"/>
+        <activity android:name=".MapActivity"/>
 
     </application>
 

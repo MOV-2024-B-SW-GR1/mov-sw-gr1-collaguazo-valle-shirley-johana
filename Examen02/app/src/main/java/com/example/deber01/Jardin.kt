@@ -5,5 +5,8 @@ data class Jardin(
     var ubicacion: String,
     var fechaCreacion: String,
     var tamano: Double,
-    var tipoSuelo: String
+    var tipoSuelo: String,
+    var latitud: Double = 0.0,
+    var longitud: Double = 0.0
 )
+
